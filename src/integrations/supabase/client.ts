@@ -8,13 +8,27 @@ function createSupabaseClient() {
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
+  // Basic validation: ensure variables exist and URL is http/https
+  const missing = [
+    ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
+    ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
+  ];
+
+  if (missing.length > 0) {
+    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}.`;
+    console.warn(`[Supabase] ${message} Supabase client will be disabled in the browser build.`);
+    throw new Error(message);
+  }
+
+  try {
+    // Validate URL format
+    const parsed = new URL(SUPABASE_URL);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Invalid protocol');
+    }
+  } catch (err) {
+    const message = `Invalid SUPABASE_URL; must be a valid http(s) URL.`;
+    console.warn(`[Supabase] ${message} Supabase client will be disabled in the browser build.`);
     throw new Error(message);
   }
 
@@ -33,8 +47,24 @@ let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 // import { supabase } from "@/integrations/supabase/client";
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
   get(_, prop, receiver) {
-    if (!_supabase) _supabase = createSupabaseClient();
-    return Reflect.get(_supabase, prop, receiver);
+    if (!_supabase) {
+      try {
+        _supabase = createSupabaseClient();
+      } catch (err) {
+        console.warn('[Supabase] client not created:', err instanceof Error ? err.message : err);
+        // Fallback noop client: any function access will throw with a helpful message
+        const noop = new Proxy({} as any, {
+          get(__, p) {
+            return (...a: any[]) => {
+              throw new Error(`Supabase client is not configured. Tried to call ${String(p)}.`);
+            };
+          },
+        });
+        _supabase = noop as any;
+      }
+    }
+
+    return Reflect.get(_supabase as any, prop, receiver);
   },
 });
 
