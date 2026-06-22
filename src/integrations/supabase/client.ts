@@ -41,6 +41,46 @@ function createSupabaseClient() {
   });
 }
 
+function createNoOpSupabaseClient() {
+  const error = new Error('Supabase is not configured.');
+  const noOpResponse = { data: null, error };
+  const noOpSessionResponse = { data: { session: null }, error: null };
+  const noOpPublicUrlResponse = { data: { publicUrl: '' }, error: null };
+
+  const noOpQuery = new Proxy(() => noOpQuery, {
+    get(_target, prop) {
+      if (prop === 'then') {
+        return (resolve: (value: any) => void) => resolve(noOpResponse);
+      }
+      if (prop === 'getPublicUrl') {
+        return () => noOpPublicUrlResponse;
+      }
+      return () => noOpQuery;
+    },
+    apply() {
+      return noOpQuery;
+    },
+  });
+
+  const noOpAuth = {
+    getSession: async () => noOpSessionResponse,
+    onAuthStateChange: async () => ({ data: { subscription: { unsubscribe() {} } }, error: null }),
+    signUp: async () => noOpResponse,
+    signInWithPassword: async () => noOpResponse,
+    signOut: async () => ({ data: null, error: null }),
+  } as any;
+
+  const noOpStorage = {
+    from: () => noOpQuery,
+  };
+
+  return {
+    auth: noOpAuth,
+    from: () => noOpQuery,
+    storage: noOpStorage,
+  } as any;
+}
+
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
 // Import the supabase client like this:
@@ -52,15 +92,7 @@ export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>,
         _supabase = createSupabaseClient();
       } catch (err) {
         console.warn('[Supabase] client not created:', err instanceof Error ? err.message : err);
-        // Fallback noop client: any function access will throw with a helpful message
-        const noop = new Proxy({} as any, {
-          get(__, p) {
-            return (...a: any[]) => {
-              throw new Error(`Supabase client is not configured. Tried to call ${String(p)}.`);
-            };
-          },
-        });
-        _supabase = noop as any;
+        _supabase = createNoOpSupabaseClient() as any;
       }
     }
 

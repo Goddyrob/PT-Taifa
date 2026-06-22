@@ -3,14 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { ShoppingCart, MessageCircle, Eye, X, Tag, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { OrderModal } from "./OrderModal";
-import w1 from "@/assets/work-1.jpg";
-import w2 from "@/assets/work-2.jpg";
-import w3 from "@/assets/work-3.jpg";
-import w4 from "@/assets/work-4.jpg";
-import w5 from "@/assets/work-5.jpg";
-import w6 from "@/assets/work-6.jpg";
-
-const WHATSAPP = "254719790799";
 
 type Work = {
   id: string;
@@ -23,15 +15,6 @@ type Work = {
   gallery?: string[];
 };
 
-const fallback: Work[] = [
-  { id: "f1", img: w1, title: "Neon Brand Mark", cat: "Logos", price: 4500, tags: ["Logo", "Identity"], description: "Premium neon-styled logo design with full brand kit." },
-  { id: "f2", img: w2, title: "Gradient Poster", cat: "Posters", price: 2000, tags: ["Print", "Social"], description: "Eye-catching gradient poster for events and promos." },
-  { id: "f3", img: w3, title: "Card Identity", cat: "Branding", price: 3500, tags: ["Business Card", "Print"], description: "Modern business card and stationery design." },
-  { id: "f4", img: w4, title: "Social Set", cat: "Social Media", price: 5000, tags: ["IG", "FB"], description: "10-piece branded social media template pack." },
-  { id: "f5", img: w5, title: "Luxe Packaging", cat: "Packaging", price: 8000, tags: ["Box", "Label"], description: "Luxury packaging design ready for print." },
-  { id: "f6", img: w6, title: "Motion Title", cat: "Motion", price: 6500, tags: ["Video", "Intro"], description: "Animated brand intro for video content." },
-];
-
 function fmt(p: number | null) {
   if (!p) return "On request";
   return `KSh ${Number(p).toLocaleString()}`;
@@ -39,18 +22,25 @@ function fmt(p: number | null) {
 
 export function Portfolio() {
   const [active, setActive] = useState("All");
-  const [works, setWorks] = useState<Work[]>(fallback);
+  const [works, setWorks] = useState<Work[]>([]);
   const [open, setOpen] = useState<Work | null>(null);
   const [orderFor, setOrderFor] = useState<Work | null>(null);
 
   useEffect(() => {
-    supabase
-      .from("portfolio_projects")
-      .select("id, title, category, price, featured_image, description, tags, gallery")
-      .eq("published", true)
-      .not("featured_image", "is", null)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
+    const loadProjects = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("portfolio_projects")
+          .select("id, title, category, price, featured_image, description, tags, gallery")
+          .eq("published", true)
+          .not("featured_image", "is", null)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Error loading projects:", error);
+          return;
+        }
+
         if (data && data.length > 0) {
           setWorks(
             data.map((p: any) => ({
@@ -65,7 +55,12 @@ export function Portfolio() {
             })),
           );
         }
-      });
+      } catch (err) {
+        console.error("Failed to load portfolio projects:", err);
+      }
+    };
+
+    loadProjects();
   }, []);
 
   const cats = useMemo(() => ["All", ...Array.from(new Set(works.map((w) => w.cat)))], [works]);

@@ -45,49 +45,38 @@ export function Testimonials() {
         </motion.div>
       </div>
 
-      <div
-        className="relative group"
-        style={{
-          maskImage:
-            "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
-        }}
-      >
-        <motion.div
-          className="flex gap-4 w-max"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ duration: 35, ease: "linear", repeat: Infinity }}
-          style={{ willChange: "transform" }}
-        >
-          {loop.map((t, i) => (
-            <div
-              key={i}
-              className="shrink-0 w-[280px] sm:w-[340px] glass rounded-3xl p-6"
-            >
-              <div className="flex gap-0.5 mb-4">
-                {Array.from({ length: 5 }).map((_, k) => (
-                  <Star
-                    key={k}
-                    className="w-4 h-4 fill-[var(--neon-purple)] text-[var(--neon-purple)]"
-                  />
-                ))}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {items.map((t, i) => (
+          <motion.div
+            key={t.name}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: i * 0.1 }}
+            className="glass rounded-3xl p-6"
+          >
+            <div className="flex gap-0.5 mb-4">
+              {Array.from({ length: 5 }).map((_, k) => (
+                <Star
+                  key={k}
+                  className="w-4 h-4 fill-[var(--neon-purple)] text-[var(--neon-purple)]"
+                />
+              ))}
+            </div>
+            <p className="text-sm text-foreground/90 leading-relaxed line-clamp-5">
+              "{t.text}"
+            </p>
+            <div className="mt-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-primary grid place-items-center font-display font-bold text-white shrink-0">
+                {t.name[0]}
               </div>
-              <p className="text-sm text-foreground/90 leading-relaxed line-clamp-5">
-                "{t.text}"
-              </p>
-              <div className="mt-5 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-primary grid place-items-center font-display font-bold text-white shrink-0">
-                  {t.name[0]}
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
+              <div>
+                <div className="text-sm font-semibold">{t.name}</div>
+                <div className="text-xs text-muted-foreground">{t.role}</div>
               </div>
             </div>
-          ))}
-        </motion.div>
+          </motion.div>
+        ))}
       </div>
     </section>
   );

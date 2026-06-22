@@ -1,5 +1,5 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { FormEvent, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,9 +20,10 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -33,61 +34,79 @@ function AuthPage() {
             data: { display_name: name },
           },
         });
+
         if (error) throw error;
         toast.success("Account created. Check your email to verify, then sign in.");
         setMode("signin");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
+
         if (error) throw error;
         toast.success("Welcome back!");
         navigate({ to: "/admin" });
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Authentication failed");
+      const message = err?.message ?? "Authentication failed.";
+      toast.error(
+        message.includes("Supabase") || message.includes("not configured")
+          ? "Authentication is unavailable. Please contact support."
+          : message,
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-background">
-      <Toaster />
-      <div className="w-full max-w-md glass-strong rounded-3xl p-8 border border-border/50">
-        <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back home</Link>
-        <h1 className="font-display font-bold text-3xl mt-3 text-gradient">
-          {mode === "signin" ? "Admin Sign In" : "Create Account"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {mode === "signin" ? "Manage your portfolio" : "Sign up — request admin access after"}
-        </p>
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight text-gray-900">
+            {mode === "signin" ? "Sign in to your account" : "Create your account"}
+          </h2>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           {mode === "signup" && (
             <div>
               <Label htmlFor="name">Name</Label>
               <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
           )}
+
           <div>
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
+
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+            />
           </div>
+
           <Button type="submit" disabled={loading} className="w-full bg-gradient-primary">
             {loading ? "Please wait…" : mode === "signin" ? "Sign In" : "Sign Up"}
           </Button>
         </form>
 
-        <button
-          type="button"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="text-sm text-muted-foreground hover:text-foreground mt-4 w-full text-center"
-        >
-          {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
-        </button>
+        <div className="text-sm text-center">
+          <button
+            type="button"
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            className="font-medium text-primary hover:text-primary-dark"
+          >
+            {mode === "signin" ? "Need an account? Sign up" : "Have an account? Sign in"}
+          </button>
+        </div>
+
+        <Toaster />
       </div>
     </div>
   );

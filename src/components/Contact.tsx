@@ -33,22 +33,31 @@ export function Contact() {
       return;
     }
     setSending(true);
-    const { error } = await supabase.from("contact_messages").insert({
-      name: parsed.data.name,
-      phone: parsed.data.phone || null,
-      email: parsed.data.email || null,
-      service: parsed.data.service || null,
-      message: parsed.data.message,
-    });
-    setSending(false);
-    if (error) {
-      toast.error("Could not send. Please try again.");
-      return;
+    try {
+      const { error } = await supabase.from("contact_messages").insert({
+        name: parsed.data.name,
+        phone: parsed.data.phone || null,
+        email: parsed.data.email || null,
+        service: parsed.data.service || null,
+        message: parsed.data.message,
+      });
+      setSending(false);
+      if (error) {
+        toast.error("Could not send. Please try again.");
+        return;
+      }
+      setSent(true);
+      form.reset();
+      toast.success("Message sent! We'll be in touch shortly.");
+      setTimeout(() => setSent(false), 4000);
+    } catch (err: any) {
+      setSending(false);
+      toast.error(
+        err?.message?.includes("Supabase")
+          ? "Messages are currently unavailable. Contact support directly."
+          : "Feature unavailable. Contact support directly.",
+      );
     }
-    setSent(true);
-    form.reset();
-    toast.success("Message sent! We'll be in touch shortly.");
-    setTimeout(() => setSent(false), 4000);
   };
 
   return (

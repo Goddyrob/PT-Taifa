@@ -47,11 +47,12 @@ export function OrderModal({
       toast.error("Please enter your name and phone number.");
       return;
     }
+
     setSubmitting(true);
-    // Open a blank tab synchronously so popup blockers treat it as a user gesture.
     const popup = window.open("about:blank", "_blank");
+
     try {
-      const { data: order, error } = await supabase
+      const orderResult = await supabase
         .from("orders")
         .insert({
           buyer_name: name.trim(),
@@ -64,16 +65,22 @@ export function OrderModal({
         })
         .select("id")
         .single();
-      if (error) throw error;
 
-      const { error: itemErr } = await supabase.from("order_items").insert({
-        order_id: order.id,
-        project_id: project.id.startsWith("f") ? null : project.id,
+      if (orderResult.error || !orderResult.data) {
+        throw orderResult.error || new Error("Unable to create order.");
+      }
+
+      const order = orderResult.data;
+      const itemResult = await supabase.from("order_items").insert({
+        order_id: project.id.startsWith("f") ? null : project.id,
         title: project.title,
         price: project.price ?? 0,
         quantity: 1,
       });
-      if (itemErr) throw itemErr;
+
+      if (itemResult.error) {
+        throw itemResult.error;
+      }
 
       const lines = [
         `Hello PT Taifa Digital Hub 👋`,
@@ -98,14 +105,14 @@ export function OrderModal({
       if (popup && !popup.closed) {
         popup.location.href = url;
       } else {
-        // Popup blocked — navigate current tab as a guaranteed fallback.
         window.location.href = url;
       }
+
       toast.success("Order placed! Continue on WhatsApp.");
       onClose();
     } catch (err: any) {
       if (popup && !popup.closed) popup.close();
-      toast.error(err.message ?? "Could not submit order");
+      toast.error("Feature is currently unavailable. Please contact us via WhatsApp directly.");
     } finally {
       setSubmitting(false);
     }

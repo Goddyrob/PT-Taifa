@@ -15,13 +15,11 @@ export function Hero() {
           height={1080}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background" />
-        <div className="absolute inset-0 grid-bg opacity-40" />
       </div>
 
-      {/* Floating blobs */}
-      <div className="absolute top-1/4 -left-20 sm:-left-32 w-64 h-64 sm:w-96 sm:h-96 rounded-full bg-[var(--neon-blue)]/30 blur-3xl animate-[blob_20s_ease-in-out_infinite] -z-10" />
-      <div className="absolute bottom-1/4 -right-20 sm:-right-32 w-72 h-72 sm:w-[28rem] sm:h-[28rem] rounded-full bg-[var(--neon-purple)]/30 blur-3xl animate-[blob_22s_ease-in-out_infinite] -z-10" />
-      <div className="absolute top-2/3 left-1/3 w-72 h-72 rounded-full bg-[var(--wine)]/40 blur-3xl animate-[blob_25s_ease-in-out_infinite] -z-10" />
+      {/* Simple ambient glow */}
+      <div className="absolute top-12 left-8 w-48 h-48 rounded-full bg-[var(--neon-blue)]/15 blur-2xl -z-10" />
+      <div className="absolute bottom-16 right-10 w-56 h-56 rounded-full bg-[var(--neon-purple)]/15 blur-2xl -z-10" />
 
       <div className="container mx-auto px-4 sm:px-6 relative">
         <motion.div
